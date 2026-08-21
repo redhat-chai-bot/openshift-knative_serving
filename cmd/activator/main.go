@@ -314,10 +314,19 @@ func main() {
 	logger.Info("Done waiting, shutting down servers.")
 
 	// Drain outstanding requests, and stop accepting new ones.
+	shutdownServers(servers)
+	logger.Info("Servers shutdown.")
+}
+
+// shutdownServers gracefully shuts down all servers by draining outstanding
+// requests and stopping acceptance of new ones. Currently this calls
+// Shutdown with no deadline, which means it will block until all active
+// connections are idle. This is problematic when HTTP/2 keep-alive
+// connections hold connections open indefinitely.
+func shutdownServers(servers map[string]*http.Server) {
 	for _, server := range servers {
 		server.Shutdown(context.Background())
 	}
-	logger.Info("Servers shutdown.")
 }
 
 func newHealthCheck(sigCtx context.Context, logger *zap.SugaredLogger, statSink *websocket.ManagedConnection) func() error {
